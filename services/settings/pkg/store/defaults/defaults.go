@@ -60,6 +60,11 @@ func GenerateBundlesDefaultRoles() []*settingsmsg.Bundle {
 	}
 }
 
+// GenerateDefaultProfileBundle return the default profile bundle.
+func GenerateDefaultProfileBundle() *settingsmsg.Bundle {
+	return generateBundleProfileRequest()
+}
+
 // ServiceAccountBundle returns the service account bundle
 func ServiceAccountBundle() *settingsmsg.Bundle {
 	return &settingsmsg.Bundle{
@@ -469,6 +474,15 @@ var sendEmailOptions = settingsmsg.Setting_SingleChoiceValue{
 			{
 				Value: &settingsmsg.ListOptionValue{
 					Option: &settingsmsg.ListOptionValue_StringValue{
+						StringValue: "instant",
+					},
+				},
+				DisplayValue: "Instant",
+				Default:      true,
+			},
+			{
+				Value: &settingsmsg.ListOptionValue{
+					Option: &settingsmsg.ListOptionValue_StringValue{
 						StringValue: "daily",
 					},
 				},
@@ -481,14 +495,6 @@ var sendEmailOptions = settingsmsg.Setting_SingleChoiceValue{
 					},
 				},
 				DisplayValue: "Weekly",
-			},
-			{
-				Value: &settingsmsg.ListOptionValue{
-					Option: &settingsmsg.ListOptionValue_StringValue{
-						StringValue: "instant",
-					},
-				},
-				DisplayValue: "Instant",
 			},
 			{
 				Value: &settingsmsg.ListOptionValue{
@@ -509,18 +515,6 @@ var optionInAppTrue = settingsmsg.MultiChoiceCollectionOption{
 		Option: &settingsmsg.MultiChoiceCollectionOptionValue_BoolValue{
 			BoolValue: &settingsmsg.Bool{
 				Default: true,
-			},
-		},
-	},
-}
-var optionInAppFalseDisabled = settingsmsg.MultiChoiceCollectionOption{
-	Key:          "in-app",
-	Attribute:    "disabled",
-	DisplayValue: "In-App",
-	Value: &settingsmsg.MultiChoiceCollectionOptionValue{
-		Option: &settingsmsg.MultiChoiceCollectionOptionValue_BoolValue{
-			BoolValue: &settingsmsg.Bool{
-				Default: false,
 			},
 		},
 	},

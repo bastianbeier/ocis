@@ -2,7 +2,6 @@ package svc
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	settingsmsg "github.com/owncloud/ocis/v2/protogen/gen/ocis/messages/settings/v0"
@@ -10,7 +9,6 @@ import (
 	"github.com/owncloud/ocis/v2/services/settings/pkg/config"
 	"github.com/owncloud/ocis/v2/services/settings/pkg/settings"
 	"github.com/owncloud/ocis/v2/services/settings/pkg/store/defaults"
-	merrors "go-micro.dev/v4/errors"
 )
 
 var _defaultLanguage = "en"
@@ -54,9 +52,7 @@ func (s *defaultLanguageDecorator) ListValues(ctx context.Context, req *settings
 	}
 	defaultValueList := getDefaultValueList()
 	for _, v := range res.Values {
-		if _, ok := defaultValueList[v.GetValue().GetSettingId()]; ok {
-			delete(defaultValueList, v.GetValue().GetSettingId())
-		}
+		delete(defaultValueList, v.GetValue().GetSettingId())
 	}
 
 	// Ensure the default values for profile settings
@@ -112,15 +108,11 @@ func (s *defaultLanguageDecorator) withDefaultProfileValue(ctx context.Context, 
 
 func (s *defaultLanguageDecorator) withDefaultProfileValueList(ctx context.Context,
 	accountUUID string, requested map[string]*settingsmsg.ValueWithIdentifier) map[string]*settingsmsg.ValueWithIdentifier {
-	req := &settingssvc.GetBundleRequest{BundleId: defaults.BundleUUIDProfile}
-	resp := &settingssvc.GetBundleResponse{}
-	if err := s.GetBundle(ctx, req, resp); err != nil {
-		if merr, ok := merrors.As(err); ok && merr.Code != http.StatusNotFound {
-			return requested
-		}
-	}
 
-	for _, setting := range resp.GetBundle().GetSettings() {
+	// we use the default profile bundle instead of s.GetBundle(ctx, req, resp)
+	bundle := defaults.GenerateDefaultProfileBundle()
+
+	for _, setting := range bundle.GetSettings() {
 		if v, ok := requested[setting.GetId()]; ok && v == nil {
 			if setting.GetId() == defaults.SettingUUIDProfileLanguage {
 				requested[setting.GetId()] = s.withDefaultLanguageSetting(accountUUID)
@@ -129,12 +121,12 @@ func (s *defaultLanguageDecorator) withDefaultProfileValueList(ctx context.Conte
 
 			newVal := &settingsmsg.ValueWithIdentifier{
 				Identifier: &settingsmsg.Identifier{
-					Extension: resp.GetBundle().GetExtension(),
-					Bundle:    resp.GetBundle().GetName(),
+					Extension: bundle.GetExtension(),
+					Bundle:    bundle.GetName(),
 					Setting:   setting.GetName(),
 				},
 				Value: &settingsmsg.Value{
-					BundleId:    resp.GetBundle().GetId(),
+					BundleId:    bundle.GetId(),
 					SettingId:   setting.GetId(),
 					AccountUuid: accountUUID,
 					Resource:    setting.GetResource(),
@@ -177,7 +169,9 @@ func multiChoiceCollectionToValue(collection *settingsmsg.MultiChoiceCollection)
 
 func getDefaultValueList() map[string]*settingsmsg.ValueWithIdentifier {
 	return map[string]*settingsmsg.ValueWithIdentifier{
-		defaults.SettingUUIDProfileLanguage:                             nil,
+		// specific profile settings should be handled individually
+		defaults.SettingUUIDProfileLanguage: nil,
+		// all other profile settings that populated from the bundle based on type
 		defaults.SettingUUIDProfileEventShareCreated:                    nil,
 		defaults.SettingUUIDProfileEventShareRemoved:                    nil,
 		defaults.SettingUUIDProfileEventShareExpired:                    nil,
